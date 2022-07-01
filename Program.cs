@@ -5,12 +5,45 @@ namespace TModLoaderUpdater
 {
     public class Program
     {
-        public static void Main()
+        private static string? _userName;
+        private static string? _host;
+        private static string? _port;
+        private static string? _privateKeyLocation;
+
+        public static void Main(string[] args)
         {
+            ParseArguments(args);
             var mods = RetrieveModsFromWorkshop();
             var conn = SetupConnectionToServer();
             PushModsToServer(conn, mods);
             PushEnabledModsJsonToServer(conn, mods);
+        }
+
+        private static void ParseArguments(IReadOnlyList<string> args)
+        {
+            if (args.Count == 0)
+            {
+                return;
+            }
+
+            for (var i = 0; i < args.Count - 1; i++)
+            {
+                switch (args[i])
+                {
+                    case "-u":
+                        _userName = args[i + 1];
+                        break;
+                    case "-h":
+                        _host = args[i + 1];
+                        break;
+                    case "-p":
+                        _port = args[i + 1];
+                        break;
+                    case "-l":
+                        _privateKeyLocation = args[i + 1];
+                        break;
+                }
+            }
         }
 
         private static List<FileInfo> RetrieveModsFromWorkshop()
@@ -69,29 +102,50 @@ namespace TModLoaderUpdater
 
         private static ConnectionInfo SetupConnectionToServer()
         {
-            Console.Write("Enter server user name: ");
-            var userName = Console.ReadLine();
-            Console.Write("Enter server host: ");
-            var host = Console.ReadLine();
-            Console.Write("Enter SSH port: ");
-            var port = Console.ReadLine();
-
-            if (userName == null || host == null || port == null)
+            if (string.IsNullOrWhiteSpace(_userName))
             {
-                Console.WriteLine("User name, host and SSH port should have a value before continuing...");
+                Console.Write("Enter server user name: ");
+                _userName = Console.ReadLine();
+            }
+
+            if (string.IsNullOrWhiteSpace(_host))
+            {
+                Console.Write("Enter server host: ");
+                _host = Console.ReadLine();
+            }
+
+            if (string.IsNullOrWhiteSpace(_port))
+            {
+                Console.Write("Enter SSH port: ");
+                _port = Console.ReadLine();
+            }
+
+            if (string.IsNullOrWhiteSpace(_privateKeyLocation))
+            {
+                Console.Write("Enter private key location: ");
+                _privateKeyLocation = Console.ReadLine();
+            }
+
+            if (string.IsNullOrWhiteSpace(_userName) || 
+                string.IsNullOrWhiteSpace(_host) || 
+                string.IsNullOrWhiteSpace(_port) ||
+                string.IsNullOrWhiteSpace(_privateKeyLocation))
+            {
+                Console.WriteLine("User name, host, SSH port and private key location should have a value before continuing");
                 throw new ArgumentNullException();
             }
 
-            if (!int.TryParse(port, out var parsedPort))
+            if (!int.TryParse(_port, out var parsedPort))
             {
-                Console.WriteLine("Port number should be convertible to an integer...");
+                Console.WriteLine("Port number should be convertible to an integer");
                 throw new ArgumentException();
             }
 
-            var pk = new PrivateKeyFile("C:\\Users\\Dx2br\\.ssh\\TerrariaServerKey_pem");
+            Console.WriteLine($"Setting up server connection with host address {_host}, port {_port} and user '{_userName}'");
+            var pk = new PrivateKeyFile(_privateKeyLocation);
             var keyFiles = new[] { pk };
-            var methods = new List<AuthenticationMethod> { new PrivateKeyAuthenticationMethod(userName, keyFiles) };
-            return new ConnectionInfo(host, parsedPort, userName, methods.ToArray());
+            var methods = new List<AuthenticationMethod> { new PrivateKeyAuthenticationMethod(_userName, keyFiles) };
+            return new ConnectionInfo(_host, parsedPort, _userName, methods.ToArray());
         }
 
         private static void PushModsToServer(ConnectionInfo conn, List<FileInfo> mods)
@@ -100,6 +154,7 @@ namespace TModLoaderUpdater
             sftp.Connect();
             sftp.ChangeDirectory(".local/share/Terraria/tModLoader/Mods");
 
+            Console.WriteLine("SFTP connection for copying mods to the server succeeded");
             foreach (var mod in mods)
             {
                 Console.WriteLine($"Copying: {mod.FullName}");
@@ -108,17 +163,19 @@ namespace TModLoaderUpdater
             }
 
             sftp.Disconnect();
+            Console.WriteLine("SFTP connection with server closed");
         }
 
         private static void PushEnabledModsJsonToServer(ConnectionInfo conn, List<FileInfo> mods)
         {
-            Console.WriteLine("Enabling all mods...");
             var enabledMods = JsonSerializer.Serialize(mods.Select(x => x.Name.Remove(x.Name.Length - 5)).ToList());
             using var sshClient = new SshClient(conn);
             sshClient.Connect();
+            Console.WriteLine("SSH connection for enabling mods succeeded");
             sshClient.RunCommand($"cd .local/share/Terraria/tModLoader/Mods && echo '{enabledMods}' > enabled.json");
+            Console.WriteLine("Enabled all mods on the server");
             sshClient.Disconnect();
-            Console.WriteLine("All mods enabled...");
+            Console.WriteLine("SSH connection with server closed");
         }
     }
 }
