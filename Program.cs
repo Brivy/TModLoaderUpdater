@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using Renci.SshNet;
 
@@ -98,7 +99,7 @@ namespace TModLoaderUpdater
             return null;
         }
 
-        private static string GetSearchPattern(int month) => 
+        private static string GetSearchPattern(int month) =>
             $"*.{month}";
 
         private static ConnectionInfo SetupConnectionToServer()
@@ -127,8 +128,8 @@ namespace TModLoaderUpdater
                 _privateKeyLocation = Console.ReadLine();
             }
 
-            if (string.IsNullOrWhiteSpace(_userName) || 
-                string.IsNullOrWhiteSpace(_host) || 
+            if (string.IsNullOrWhiteSpace(_userName) ||
+                string.IsNullOrWhiteSpace(_host) ||
                 string.IsNullOrWhiteSpace(_port) ||
                 string.IsNullOrWhiteSpace(_privateKeyLocation))
             {
@@ -160,7 +161,7 @@ namespace TModLoaderUpdater
             {
                 Console.WriteLine($"Copying: {mod.FullName}");
                 using var modStream = mod.OpenRead();
-                sftp.UploadFile(modStream, mod.Name, true);
+                sftp.UploadFile(modStream, mod.Name, true, UploadProgressCallback);
             }
 
             sftp.Disconnect();
@@ -180,8 +181,8 @@ namespace TModLoaderUpdater
         {
             var steamStartFile = OpenProjectFile("Resources/start-tModLoaderServerWithoutSteam.sh");
             var startupFile = OpenProjectFile("Resources/startup.sh");
-            var serverConfigFiles = OpenProjectFile("Resources/serverconfig.txt");
-            var serverFiles = new List<FileInfo> { steamStartFile, startupFile, serverConfigFiles };
+            var serverConfigFile = OpenProjectFile("Resources/serverconfig.txt");
+            var serverFiles = new List<FileInfo> { steamStartFile, startupFile, serverConfigFile };
 
             using var sftp = new SftpClient(conn);
             sftp.Connect();
@@ -217,6 +218,11 @@ namespace TModLoaderUpdater
 
             var combinedPath = Path.Combine(assemblyLocation, path);
             return new FileInfo(combinedPath);
+        }
+
+        private static void UploadProgressCallback(ulong uploaded)
+        {
+            Console.WriteLine("Upload progress: " + (int)uploaded);
         }
     }
 }
