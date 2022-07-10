@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Reflection;
+using System.Text.Json;
 using Renci.SshNet;
 
 namespace TModLoaderUpdater
@@ -16,7 +17,7 @@ namespace TModLoaderUpdater
             var mods = RetrieveModsFromWorkshop();
             var conn = SetupConnectionToServer();
             PushModsToServer(conn, mods);
-            PushEnabledModsJsonToServer(conn, mods);
+            UpdateServerFiles(conn);
         }
 
         private static void ParseArguments(IReadOnlyList<string> args)
@@ -164,10 +165,7 @@ namespace TModLoaderUpdater
 
             sftp.Disconnect();
             Console.WriteLine("SFTP connection with server closed");
-        }
 
-        private static void PushEnabledModsJsonToServer(ConnectionInfo conn, List<FileInfo> mods)
-        {
             var enabledMods = JsonSerializer.Serialize(mods.Select(x => x.Name.Remove(x.Name.Length - 5)).ToList());
             using var sshClient = new SshClient(conn);
             sshClient.Connect();
@@ -176,6 +174,49 @@ namespace TModLoaderUpdater
             Console.WriteLine("Enabled all mods on the server");
             sshClient.Disconnect();
             Console.WriteLine("SSH connection with server closed");
+        }
+
+        private static void UpdateServerFiles(ConnectionInfo conn)
+        {
+            var steamStartFile = OpenProjectFile("Resources/start-tModLoaderServerWithoutSteam.sh");
+            var startupFile = OpenProjectFile("Resources/startup.sh");
+            var serverConfigFiles = OpenProjectFile("Resources/serverconfig.txt");
+            var serverFiles = new List<FileInfo> { steamStartFile, startupFile, serverConfigFiles };
+
+            using var sftp = new SftpClient(conn);
+            sftp.Connect();
+            Console.WriteLine("SFTP connection for sending server files");
+            foreach (var serverFile in serverFiles)
+            {
+                Console.WriteLine($"Copying: {serverFile.FullName}");
+                using var fileStream = serverFile.OpenRead();
+                sftp.UploadFile(fileStream, serverFile.Name, true);
+            }
+
+            sftp.Disconnect();
+            Console.WriteLine("SFTP connection with server closed");
+
+            using var sshClient = new SshClient(conn);
+            sshClient.Connect();
+            Console.WriteLine("SSH connection for updating the server files");
+            sshClient.RunCommand("wget https://github.com/tModLoader/tModLoader/releases/latest/download/tModLoader.zip");
+            sshClient.RunCommand("rm -rf ~/tmod/ && unzip -o tModLoader.zip -d ~/tmod/ && rm tModLoader.zip");
+            sshClient.RunCommand("chmod u+x startup.sh && chmod u+x start-tModLoaderServerWithoutSteam.sh");
+            sshClient.RunCommand("mv start-tModLoaderServerWithoutSteam.sh ~/tmod/ && mv serverconfig.txt ~/tmod/");
+            sshClient.Disconnect();
+            Console.WriteLine("SSH connection with server closed");
+        }
+
+        private static FileInfo OpenProjectFile(string path)
+        {
+            var assemblyLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            if (assemblyLocation == null)
+            {
+                throw new Exception();
+            }
+
+            var combinedPath = Path.Combine(assemblyLocation, path);
+            return new FileInfo(combinedPath);
         }
     }
 }
