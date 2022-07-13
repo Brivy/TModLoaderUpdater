@@ -29,6 +29,9 @@ namespace TModLoaderUpdater
             {
                 Console.WriteLine(e.Message);
             }
+
+            Console.WriteLine("Finished updating the server...");
+            Console.ReadLine();
         }
 
         private static void ParseArguments(IReadOnlyList<string> args)
