@@ -12,13 +12,23 @@ namespace TModLoaderUpdater
         private static string? _port;
         private static string? _privateKeyLocation;
 
+        private static double _currentFileSize;
+        private static int _lastPercentageShown;
+
         public static void Main(string[] args)
         {
-            ParseArguments(args);
-            var mods = RetrieveModsFromWorkshop();
-            var conn = SetupConnectionToServer();
-            PushModsToServer(conn, mods);
-            UpdateServerFiles(conn);
+            try
+            {
+                ParseArguments(args);
+                var mods = RetrieveModsFromWorkshop();
+                var conn = SetupConnectionToServer();
+                PushModsToServer(conn, mods);
+                UpdateServerFiles(conn);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         private static void ParseArguments(IReadOnlyList<string> args)
@@ -161,6 +171,7 @@ namespace TModLoaderUpdater
             {
                 Console.WriteLine($"Copying: {mod.FullName}");
                 using var modStream = mod.OpenRead();
+                _currentFileSize = modStream.Length;
                 sftp.UploadFile(modStream, mod.Name, true, UploadProgressCallback);
             }
 
@@ -191,7 +202,8 @@ namespace TModLoaderUpdater
             {
                 Console.WriteLine($"Copying: {serverFile.FullName}");
                 using var fileStream = serverFile.OpenRead();
-                sftp.UploadFile(fileStream, serverFile.Name, true);
+                _currentFileSize = fileStream.Length;
+                sftp.UploadFile(fileStream, serverFile.Name, true, UploadProgressCallback);
             }
 
             sftp.Disconnect();
@@ -222,7 +234,18 @@ namespace TModLoaderUpdater
 
         private static void UploadProgressCallback(ulong uploaded)
         {
-            Console.WriteLine("Upload progress: " + (int)uploaded);
+            var progress = (int)(uploaded / _currentFileSize * 100);
+            if (progress == 100)
+            {
+                _lastPercentageShown = 0;
+                Console.WriteLine("Upload progress: 100%");
+                Console.WriteLine("Upload complete");
+            }
+            else if (progress % 25 == 0 && _lastPercentageShown != progress)
+            {
+                _lastPercentageShown = progress;
+                Console.WriteLine("Upload progress: " + progress + "%");
+            }
         }
     }
 }
