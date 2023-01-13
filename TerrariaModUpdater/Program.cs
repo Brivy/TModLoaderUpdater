@@ -64,6 +64,8 @@ namespace TModLoaderUpdater
         private static List<FileInfo> RetrieveModsFromWorkshop()
         {
             var lastMonth = DateTime.Now.Month - 1;
+            if (lastMonth == 0) lastMonth = 12; // In case the current month is Januari, the last month is December
+
             var workshopLocation = @"C:\Program Files (x86)\Steam\steamapps\workshop\content\1281930";
             var workshopDirectory = new DirectoryInfo(workshopLocation);
 
