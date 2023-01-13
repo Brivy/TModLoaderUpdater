@@ -6,6 +6,11 @@
 # Only needed to set arguments for startup
 Properties/
 
+# User specific files
+Resources/disabled-mods.json
+Resources/serverconfig.txt
+Resources/version-specific-mods.json
+
 # User-specific files
 *.rsuser
 *.suo
