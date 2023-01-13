@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using Renci.SshNet;
+using TModLoaderUpdater.Models;
 
 namespace TModLoaderUpdater
 {
@@ -31,7 +32,6 @@ namespace TModLoaderUpdater
             }
 
             Console.WriteLine("Finished updating the server...");
-            Console.ReadLine();
         }
 
         private static void ParseArguments(IReadOnlyList<string> args)
@@ -63,28 +63,41 @@ namespace TModLoaderUpdater
 
         private static List<FileInfo> RetrieveModsFromWorkshop()
         {
+            var currentYear = DateTime.Now.Year;
             var lastMonth = DateTime.Now.Month - 1;
-            if (lastMonth == 0) lastMonth = 12; // In case the current month is Januari, the last month is December
+            if (lastMonth == 0)
+            {
+                // In case the current month is Januari, the last month is December
+                currentYear--;
+                lastMonth = 12;
+            }
 
             var workshopLocation = @"C:\Program Files (x86)\Steam\steamapps\workshop\content\1281930";
             var workshopDirectory = new DirectoryInfo(workshopLocation);
+            var disabledMods = OpenJsonFIle<List<DisabledMod>>("Resources/disabled-mods.json") ?? new List<DisabledMod>();
+            var versionSpecificMods = OpenJsonFIle<List<VersionSpecificMod>>("Resources/version-specific-mods.json") ?? new List<VersionSpecificMod>();
 
             var mods = new List<FileInfo>();
             foreach (var modDirectory in workshopDirectory.EnumerateDirectories())
             {
-                var currentMod = modDirectory.GetDirectories(GetSearchPattern(lastMonth));
-                if (currentMod.Length != 1)
+                if (disabledMods.Any(x => x.WorkshopName == modDirectory.Name))
                 {
-                    currentMod = GetOlderModDirectory(modDirectory, lastMonth);
-                    if (currentMod?.Any() != true)
-                    {
-                        continue;
-                    }
+                    Console.WriteLine($"Mod {modDirectory.Name} found in the disabled mod list and will not be uploaded");
+                    continue;
                 }
 
-                var mod = currentMod.First().GetFiles("*.tmod");
+                var versionSpecificMod = versionSpecificMods.SingleOrDefault(x => x.WorkshopName == modDirectory.Name);
+                var currentMod = versionSpecificMod != null ? GetVersionSpecificModDirectory(modDirectory, versionSpecificMod) : GetModDirectory(modDirectory, currentYear, lastMonth);
+                if (currentMod == null)
+                {
+                    Console.WriteLine($"Mod {modDirectory.Name} was not found or has an build that is too old. Please specify the exact version in 'version-specific-mods.json' if you want to use a mod with a build older than 12 months");
+                    continue;
+                }
+
+                var mod = currentMod.Single().GetFiles("*.tmod");
                 if (mod.Length != 1)
                 {
+                    Console.WriteLine($"Mod {modDirectory.Name} with folder version {currentMod.Single().Name} does not have a .tmod file available");
                     continue;
                 }
 
@@ -94,17 +107,32 @@ namespace TModLoaderUpdater
             return mods;
         }
 
-        private static DirectoryInfo[]? GetOlderModDirectory(DirectoryInfo modDirectory, int month)
+        private static DirectoryInfo[]? GetVersionSpecificModDirectory(DirectoryInfo modDirectory, VersionSpecificMod versionSpecificMod)
         {
+            Console.WriteLine($"Mod {versionSpecificMod.Name} found in the version specific mod list so only version {versionSpecificMod.Version()} will be uploaded");
+            var currentMod = modDirectory.GetDirectories(GetSearchPattern(versionSpecificMod.Year, versionSpecificMod.Month));
+            return currentMod?.Any() == true ? currentMod : null;
+        }
+
+        private static DirectoryInfo[]? GetModDirectory(DirectoryInfo modDirectory, int year, int month)
+        {
+            var currentMod = modDirectory.GetDirectories(GetSearchPattern(year, month));
+            if (currentMod.Length == 1)
+            {
+                return currentMod;
+            }
+
+            // If not found for last month, search for previous months
             for (var i = 1; i < 13; i++)
             {
                 var previousMonth = month - i;
                 if (previousMonth == 0)
                 {
+                    year--;
                     previousMonth = 12 + month - i;
                 }
 
-                var currentMod = modDirectory.GetDirectories(GetSearchPattern(previousMonth));
+                currentMod = modDirectory.GetDirectories(GetSearchPattern(year, previousMonth));
                 if (currentMod.Length == 1)
                 {
                     return currentMod;
@@ -114,8 +142,8 @@ namespace TModLoaderUpdater
             return null;
         }
 
-        private static string GetSearchPattern(int month) =>
-            $"*.{month}";
+        private static string GetSearchPattern(int year, int month) =>
+            $"*{year}.{month}";
 
         private static ConnectionInfo SetupConnectionToServer()
         {
@@ -235,6 +263,12 @@ namespace TModLoaderUpdater
 
             var combinedPath = Path.Combine(assemblyLocation, path);
             return new FileInfo(combinedPath);
+        }
+
+        private static T? OpenJsonFIle<T>(string filePath)
+        {
+            string text = File.ReadAllText(filePath);
+            return JsonSerializer.Deserialize<T>(text);
         }
 
         private static void UploadProgressCallback(ulong uploaded)
