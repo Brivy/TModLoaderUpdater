@@ -15,6 +15,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\DependencyInjection.Common\DependencyInjection.Common.csproj" />
+	  <ProjectReference Include="..\Exceptions\Exceptions.csproj" />
 	  <ProjectReference Include="..\ProjectFiles\ProjectFiles.csproj" />
 	  <ProjectReference Include="..\Server.Communication.Contracts\Server.Communication.Contracts.csproj" />
 	  <ProjectReference Include="..\Updater.Business.Contracts\Updater.Business.Contracts.csproj" />

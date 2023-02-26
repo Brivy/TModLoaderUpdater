@@ -6,5 +6,8 @@ namespace TModLoaderMaintainer.Application.Updater.Business.Configuration
     {
         [Required]
         public string SteamWorkshopLocation { get; set; } = null!;
+
+        [Required]
+        public string ModFileExtension { get; set; } = null!;
     }
 }

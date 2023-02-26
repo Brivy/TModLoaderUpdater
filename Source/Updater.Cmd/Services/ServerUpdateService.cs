@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
-using TModLoaderMaintainer.Clients.Updater.Cmd.Exceptions;
 using TModLoaderMaintainer.Application.Updater.Business.Contracts.Services;
 using TModLoaderMaintainer.Clients.Updater.Cmd.Contracts;
+using TModLoaderMaintainer.Models.Exceptions;
+using TModLoaderMaintainer.Models.ProjectFiles.Constants;
 
 namespace TModLoaderMaintainer.Clients.Updater.Cmd.Services
 {
@@ -29,15 +30,15 @@ namespace TModLoaderMaintainer.Clients.Updater.Cmd.Services
             try
             {
                 var mods = _systemFileService.RetrieveModsFromWorkshop();
-                if (!mods.Any())
-                {
-                    throw new ModNotFoundException();
-                }
-
                 _serverModUpdaterService.Update(mods);
                 _serverFilesUpdaterService.Update();
 
                 _logger.LogInformation("Done updating server. Press any key to exit the updater...");
+            }
+            catch (ProjectFileNotFoundException e)
+            {
+                _logger.LogError(e, "One of the required project files for the TModLoader server could not be found. " +
+                    "Please check if the {serverconfig}, {startTModWithoutSteam} and the {startup} are present", ProjectFileNames.ServerConfigFile, ProjectFileNames.StartTModWithoutSteamFile, ProjectFileNames.StartServerFile);
             }
             catch (Exception e)
             {

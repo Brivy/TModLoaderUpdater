@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Microsoft.Extensions.Logging;
+using System.Text.Json;
 using TModLoaderMaintainer.Application.Updater.Business.Builders;
 using TModLoaderMaintainer.Application.Updater.Business.Contracts.Services;
 using TModLoaderMaintainer.Infrastructure.Server.Communication.Contracts.Services;
@@ -9,17 +10,26 @@ namespace TModLoaderMaintainer.Application.Updater.Business.Services
     {
         private readonly ISftpConnectionService _tModSftpService;
         private readonly ISshConnectionService _tModSshService;
+        private readonly ILogger<ServerModUpdaterService> _logger;
 
         public ServerModUpdaterService(
             ISftpConnectionService tModSftpService,
-            ISshConnectionService tModSshService)
+            ISshConnectionService tModSshService,
+            ILogger<ServerModUpdaterService> logger)
         {
             _tModSftpService = tModSftpService;
             _tModSshService = tModSshService;
+            _logger = logger;
         }
 
         public void Update(List<FileInfo> mods)
         {
+            if (!mods.Any())
+            {
+                _logger.LogWarning("No mods found to be uploaded. Please check if the steam workshop location is correct in the configuration");
+                return;
+            }
+
             var sftpServerAction = new SftpServerActionBuilder()
                 .AddLoggingAction("Uploading mods")
                 .AddChangeDirectoryAction(".local/share/Terraria/tModLoader/Mods")

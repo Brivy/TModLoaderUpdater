@@ -2,6 +2,7 @@
 using TModLoaderMaintainer.Application.Updater.Business.Contracts.Services;
 using TModLoaderMaintainer.Infrastructure.Server.Communication.Contracts.Services;
 using TModLoaderMaintainer.Models.ProjectFiles.Constants;
+using TModLoaderMaintainer.Models.Exceptions;
 
 namespace TModLoaderMaintainer.Application.Updater.Business.Services
 {
@@ -29,7 +30,7 @@ namespace TModLoaderMaintainer.Application.Updater.Business.Services
 
             if (steamStartFile == null || startupFile == null || serverConfigFile == null)
             {
-                throw new Exception();
+                throw new ProjectFileNotFoundException();
             }
 
             var serverFiles = new List<FileInfo> { steamStartFile, startupFile, serverConfigFile };

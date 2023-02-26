@@ -17,6 +17,7 @@ namespace TModLoaderMaintainer.Application.Updater.Business.Extensions
             var fileDirectoryConfigurationSection = configuration.GetSection("FileDirectoryConfiguration");
             services.AddOptionsWithValidation<FileDirectoryConfigurationSettings>(fileDirectoryConfigurationSection);
 
+            services.AddScoped<IModFinderService, ModFinderService>();
             services.AddScoped<IProjectFileService, ProjectFileService>();
             services.AddScoped<IServerModUpdaterService, ServerModUpdaterService>();
             services.AddScoped<IServerFilesUpdaterService, ServerFilesUpdaterService>();

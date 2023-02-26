@@ -82,7 +82,7 @@ namespace TModLoaderMaintainer.Infrastructure.Server.Communication.Services
             else if (progress % 20 == 0 && _lastPercentageShown != progress)
             {
                 _lastPercentageShown = progress;
-                _logger.LogInformation("Upload progress: " + progress + "%");
+                _logger.LogInformation("Upload progress: {progress}%", progress);
             }
         }
     }
