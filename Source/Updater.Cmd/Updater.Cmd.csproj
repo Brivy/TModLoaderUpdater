@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>TModLoaderMaintainer.Clients.Updater.Cmd</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Server.Communication.Contracts\Server.Communication.Contracts.csproj" />
+	  <ProjectReference Include="..\Server.Communication\Server.Communication.csproj" />
+	  <ProjectReference Include="..\Updater.Business.Contracts\Updater.Business.Contracts.csproj" />
+	  <ProjectReference Include="..\Updater.Business\Updater.Business.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="appsettings.Development.json">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="appsettings.json">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
+</Project>

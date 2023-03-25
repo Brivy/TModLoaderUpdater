@@ -25,7 +25,7 @@
 #remove the # in front of commands to enable them.
 
 #Load a world and automatically start the server.
-#world=C:\Users\YOUR_USERNAME_HERE\My Documents\My Games\Terraria\Worlds\world1.wld
+world=/home/brivy/.local/share/Terraria/tModLoader/Worlds/CalTho.wld
 
 #Creates a new world if none is found. World size is specified by: 1(small), 2(medium), and 3(large).
 #autocreate=1
@@ -40,19 +40,19 @@
 #difficulty=1
 
 #Sets the max number of players allowed on a server.  Value must be between 1 and 255
-#maxplayers=8
+maxplayers=8
 
 #Set the port number
-#port=7777
+port=7777
 
 #Set the server password
-#password=p@55w0rd
+password=test
 
 #Set the message of the day
-#motd=Please don t cut the purple trees!
+motd=Hallo daar :)
 
 #Sets the folder where world files will be stored
-#worldpath=C:\Users\Defaults\My Documents\My Games\Terraria\Worlds\
+worldpath=/home/brivy/.local/share/Terraria/tModLoader/Worlds
 
 #The location of the banlist. Defaults to "banlist.txt" in the working directory.
 #banlist=banlist.txt
@@ -61,8 +61,8 @@
 #secure=1
 
 #Sets the server language from its language code.
-#English = en-US, German = de-DE, Italian = it-IT, French = fr-FR, Spanish = es-ES, Russian = ru-RU, Chinese = zh-Hans, Portuguese = pt-BR, Polish = pl-PL,
-#language=en-US
+English = en-US, German = de-DE, Italian = it-IT, French = fr-FR, Spanish = es-ES, Russian = ru-RU, Chinese = zh-Hans, Portuguese = pt-BR, Polish = pl-PL,
+language=en-US
 
 #Automatically forward ports with uPNP
 #upnp=1
@@ -71,4 +71,4 @@
 #npcstream=60
 
 #Default system priority 0:Realtime, 1:High, 2:AboveNormal, 3:Normal, 4:BelowNormal, 5:Idle
-priority=1
+priority=0
